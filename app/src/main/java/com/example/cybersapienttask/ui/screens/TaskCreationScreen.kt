@@ -38,7 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.cybersapienttask.ui.components.PriorityPicker
-import com.example.cybersapienttask.viewmodel.TaskDetailViewModel
+import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -68,7 +68,10 @@ fun TaskCreationScreen(
                 title = { Text(if (isNewTask) "Create Task" else "Edit Task") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Navigate back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Navigate back"
+                        )
                     }
                 },
                 actions = {

@@ -10,12 +10,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.cybersapienttask.data.repo.TaskRepository
 import com.example.cybersapienttask.ui.screens.TaskCreationScreen
-import com.example.cybersapienttask.ui.screens.TaskDetailScreen
-import com.example.cybersapienttask.ui.screens.TaskListScreen
-import com.example.cybersapienttask.viewmodel.TaskDetailViewModel
-import com.example.cybersapienttask.viewmodel.TaskDetailViewModelFactory
-import com.example.cybersapienttask.viewmodel.TaskListViewModel
-import com.example.cybersapienttask.viewmodel.TaskListViewModelFactory
+import com.example.cybersapienttask.ui.screens.settings.SettingsScreen
+import com.example.cybersapienttask.ui.screens.settings.SettingsViewModel
+import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailScreen
+import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailViewModel
+import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailViewModelFactory
+import com.example.cybersapienttask.ui.screens.tasklist.TaskListScreen
+import com.example.cybersapienttask.ui.screens.tasklist.TaskListViewModel
+import com.example.cybersapienttask.ui.screens.tasklist.TaskListViewModelFactory
 
 sealed class Screen(val route: String) {
     object TaskList : Screen("task_list")
@@ -26,11 +28,16 @@ sealed class Screen(val route: String) {
     object TaskDetail : Screen("task_detail/{taskId}") {
         fun createRoute(taskId: Long) = "task_detail/$taskId"
     }
+
+    object Settings : Screen("settings")
 }
 
 @Composable
 fun AppNavigation(
     repository: TaskRepository,
+    settingsViewModel: SettingsViewModel,
+    isDarkTheme: Boolean,
+    onToggleDarkTheme: (Boolean) -> Unit,
     navController: NavHostController = rememberNavController()
 ) {
     NavHost(navController = navController, startDestination = Screen.TaskList.route) {
@@ -46,6 +53,9 @@ fun AppNavigation(
                 },
                 onAddTask = {
                     navController.navigate(Screen.TaskCreation.createRoute())
+                },
+                onSettingsClick = {
+                    navController.navigate(Screen.Settings.route)
                 }
             )
         }
@@ -110,6 +120,17 @@ fun AppNavigation(
                 onTaskDeleted = {
                     navController.navigateUp()
                 }
+            )
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                viewModel = settingsViewModel,
+                onNavigateUp = {
+                    navController.navigateUp()
+                },
+                onToggleDarkMode = onToggleDarkTheme,
+                isDarkMode = isDarkTheme
             )
         }
     }

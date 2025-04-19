@@ -1,11 +1,9 @@
-package com.example.cybersapienttask.viewmodel
+package com.example.cybersapienttask.ui.screens.tasklist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.cybersapienttask.data.model.Task
-import com.example.cybersapienttask.data.model.TaskFilter
-import com.example.cybersapienttask.data.model.TaskSortOrder
 import com.example.cybersapienttask.data.repo.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,7 +12,35 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+enum class TaskFilter {
+    ALL, COMPLETED, PENDING
+}
+
+enum class TaskSortOrder {
+    PRIORITY, DUE_DATE, ALPHABETICAL
+}
+
 class TaskListViewModel(private val repository: TaskRepository) : ViewModel() {
+
+    // Task statistics
+    val taskStats: StateFlow<TaskStatistics> = combine(
+        repository.getAllTasks(),
+        repository.getTasksByStatus(true)
+    ) { allTasks, completedTasks ->
+        TaskStatistics(
+            totalTasks = allTasks.size,
+            completedTasks = completedTasks.size
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = TaskStatistics(0, 0)
+    )
+
+    data class TaskStatistics(
+        val totalTasks: Int,
+        val completedTasks: Int
+    )
 
     private val _filter = MutableStateFlow(TaskFilter.ALL)
     val filter: StateFlow<TaskFilter> = _filter
@@ -23,33 +49,68 @@ class TaskListViewModel(private val repository: TaskRepository) : ViewModel() {
     val sortOrder: StateFlow<TaskSortOrder> = _sortOrder
 
     private val _allTasks = MutableStateFlow<List<Task>>(emptyList())
+    private val _orderedTasks = MutableStateFlow<List<Task>>(emptyList())
     private val _filteredTasks = MutableStateFlow<List<Task>>(emptyList())
+    private val _isManualOrder = MutableStateFlow(false)
 
-    val tasks: StateFlow<List<Task>> =
-        combine(_allTasks, _filter, _sortOrder) { tasks, filter, sortOrder ->
-            val filtered = when (filter) {
-                TaskFilter.ALL -> tasks
-                TaskFilter.COMPLETED -> tasks.filter { it.isCompleted }
-                TaskFilter.PENDING -> tasks.filter { !it.isCompleted }
-            }
+    val isManualOrder: StateFlow<Boolean> = _isManualOrder
 
-            // Apply sorting
+    val tasks: StateFlow<List<Task>> = combine(
+        _allTasks,
+        _orderedTasks,
+        _filter,
+        _sortOrder,
+        _isManualOrder
+    ) { allTasks, orderedTasks, filter, sortOrder, isManualOrder ->
+        // First, choose between manual ordering or automatic sorting
+        val baseList = if (isManualOrder) orderedTasks else allTasks
+
+        // Then apply filtering
+        val filtered = when (filter) {
+            TaskFilter.ALL -> baseList
+            TaskFilter.COMPLETED -> baseList.filter { it.isCompleted }
+            TaskFilter.PENDING -> baseList.filter { !it.isCompleted }
+        }
+
+        // Apply sorting if not using manual ordering
+        if (!isManualOrder) {
             when (sortOrder) {
                 TaskSortOrder.PRIORITY -> filtered.sortedByDescending { it.priority }
                 TaskSortOrder.DUE_DATE -> filtered.sortedWith(compareBy(nullsLast()) { it.dueDate })
                 TaskSortOrder.ALPHABETICAL -> filtered.sortedBy { it.title }
             }
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+        } else {
+            filtered  // Keep the manual order
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     init {
         viewModelScope.launch {
             repository.getAllTasks().collect { tasks ->
                 _allTasks.value = tasks
             }
+        }
+
+        viewModelScope.launch {
+            repository.getOrderedTasks().collect { tasks ->
+                _orderedTasks.value = tasks
+            }
+        }
+    }
+
+    // Toggle between manual ordering and automatic sorting
+    fun toggleManualOrdering() {
+        _isManualOrder.value = !_isManualOrder.value
+    }
+
+    // Update task order via drag and drop
+    fun moveTask(fromIndex: Int, toIndex: Int) {
+        viewModelScope.launch {
+            repository.moveTask(fromIndex, toIndex)
         }
     }
 
@@ -70,6 +131,12 @@ class TaskListViewModel(private val repository: TaskRepository) : ViewModel() {
     fun deleteTask(task: Task) {
         viewModelScope.launch {
             repository.deleteTask(task)
+        }
+    }
+
+    fun restoreTask(task: Task) {
+        viewModelScope.launch {
+            repository.insertTask(task)
         }
     }
 

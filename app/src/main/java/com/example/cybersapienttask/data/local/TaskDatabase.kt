@@ -6,13 +6,18 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.cybersapienttask.data.model.Task
+import com.example.cybersapienttask.data.model.TaskOrder
 import com.example.cybersapienttask.data.util.Converters
 
-
-@Database(entities = [Task::class], version = 1, exportSchema = false)
+@Database(
+    entities = [Task::class, TaskOrder::class],
+    version = 1,
+    exportSchema = false
+)
 @TypeConverters(Converters::class)
 abstract class TaskDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
+    abstract fun taskOrderDao(): TaskOrderDao
 
     companion object {
         @Volatile

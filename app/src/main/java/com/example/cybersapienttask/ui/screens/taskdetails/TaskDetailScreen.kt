@@ -1,4 +1,4 @@
-package com.example.cybersapienttask.ui.screens
+package com.example.cybersapienttask.ui.screens.taskdetails
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -42,7 +42,6 @@ import com.example.cybersapienttask.data.model.TaskPriority
 import com.example.cybersapienttask.ui.theme.PriorityHigh
 import com.example.cybersapienttask.ui.theme.PriorityLow
 import com.example.cybersapienttask.ui.theme.PriorityMedium
-import com.example.cybersapienttask.viewmodel.TaskDetailViewModel
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,7 +61,10 @@ fun TaskDetailScreen(
                 title = { Text("Task Details") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Navigate back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Navigate back"
+                        )
                     }
                 },
                 actions = {

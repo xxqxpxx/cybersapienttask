@@ -1,4 +1,4 @@
-package com.example.cybersapienttask.viewmodel
+package com.example.cybersapienttask.ui.screens.taskdetails
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel

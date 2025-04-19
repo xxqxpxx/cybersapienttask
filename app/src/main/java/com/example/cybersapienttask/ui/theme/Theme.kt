@@ -10,11 +10,11 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -29,10 +29,11 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun CyberSapientTaskTheme(
+fun TaskManagerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
+    customPrimaryColor: Color? = null,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -43,7 +44,19 @@ fun CyberSapientTaskTheme(
 
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
+    }.let { scheme ->
+        if (customPrimaryColor != null) {
+            // Apply the custom primary color to the color scheme
+            scheme.copy(
+                primary = customPrimaryColor,
+                primaryContainer = customPrimaryColor.copy(alpha = 0.15f),
+                onPrimary = Color.White
+            )
+        } else {
+            scheme
+        }
     }
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

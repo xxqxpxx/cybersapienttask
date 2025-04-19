@@ -1,15 +1,17 @@
-package com.example.cybersapienttask.ui.screens
+package com.example.cybersapienttask.ui.screens.tasklist
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,6 +20,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -26,37 +30,48 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.cybersapienttask.data.model.Task
-import com.example.cybersapienttask.data.model.TaskFilter
-import com.example.cybersapienttask.data.model.TaskSortOrder
-import com.example.cybersapienttask.ui.components.TaskItem
-import com.example.cybersapienttask.viewmodel.TaskListViewModel
+import com.example.cybersapienttask.ui.components.DraggableTaskItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(
     viewModel: TaskListViewModel,
     onTaskClick: (Long) -> Unit,
-    onAddTask: () -> Unit
+    onAddTask: () -> Unit,
+    onSettingsClick: () -> Unit
 ) {
     val tasks by viewModel.tasks.collectAsState()
     val filter by viewModel.filter.collectAsState()
     val sortOrder by viewModel.sortOrder.collectAsState()
+    val isManualOrder by viewModel.isManualOrder.collectAsState()
 
     var showFilterMenu by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
 
+    // State for tracking drag operations
+    var dragTargetIndex by remember { mutableStateOf(-1) }
+
+    // Snackbar host state for undo functionality
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Keep track of the last deleted task for potential undo
+    var lastDeletedTask by remember { mutableStateOf<Task?>(null) }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Task Manager") },
                 actions = {
                     IconButton(onClick = { showFilterMenu = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Filter tasks")
+                        Icon(Icons.Default.Person, contentDescription = "Filter tasks")
                     }
 
                     DropdownMenu(
@@ -87,7 +102,7 @@ fun TaskListScreen(
                     }
 
                     IconButton(onClick = { showSortMenu = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Sort tasks")
+                        Icon(Icons.Default.Person, contentDescription = "Sort tasks")
                     }
 
                     DropdownMenu(
@@ -116,6 +131,19 @@ fun TaskListScreen(
                             }
                         )
                     }
+
+                    // Manual ordering toggle
+                    IconButton(onClick = { viewModel.toggleManualOrdering() }) {
+                        Icon(
+                            Icons.Default.Person, // update
+                            contentDescription = if (isManualOrder) "Disable manual ordering" else "Enable manual ordering",
+                            tint = if (isManualOrder) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -137,17 +165,24 @@ fun TaskListScreen(
             tasks = tasks,
             onTaskClick = { onTaskClick(it.id) },
             onCheckboxClick = { viewModel.toggleTaskCompletion(it) },
-            modifier = Modifier.padding(paddingValues)
+            modifier = Modifier.padding(paddingValues),
+            isManualOrder = isManualOrder,
+            onTaskMove = { fromIndex, toIndex ->
+                viewModel.moveTask(fromIndex, toIndex)
+            }
         )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TaskListContent(
     tasks: List<Task>,
     onTaskClick: (Task) -> Unit,
     onCheckboxClick: (Task) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isManualOrder: Boolean = false,
+    onTaskMove: (Int, Int) -> Unit = { _, _ -> }
 ) {
     if (tasks.isEmpty()) {
         Box(
@@ -169,19 +204,73 @@ fun TaskListContent(
             }
         }
     } else {
+        // State for tracking drag target positions
+        var dragTargetIndex by remember { mutableStateOf(-1) }
+
         LazyColumn(
             modifier = modifier.fillMaxSize(),
             contentPadding = PaddingValues(8.dp)
         ) {
-            items(
+            itemsIndexed(
                 items = tasks,
-                key = { it.id }
-            ) { task ->
-                TaskItem(
-                    task = task,
-                    onTaskClick = onTaskClick,
-                    onCheckboxClick = onCheckboxClick
-                )
+                key = { _, task -> task.id }
+            ) { index, task ->
+                if (isManualOrder) {
+                    DraggableTaskItem(
+                        task = task,
+                        onTaskClick = onTaskClick,
+                        onCheckboxClick = onCheckboxClick,
+                        onDragComplete = { fromIndex, toIndex ->
+                            onTaskMove(fromIndex, toIndex)
+                        },
+                        isDraggable = isManualOrder,
+                        currentPosition = index,
+                        updateDragPosition = { startIndex, dragOffset ->
+                            // Calculate how many items we've dragged past
+                            val itemHeight = 116  // Approximate height of item in dp
+                            val dragDistance = (dragOffset / itemHeight).toInt()
+                            val targetIndex =
+                                (startIndex + dragDistance).coerceIn(0, tasks.size - 1)
+
+                            // Update the visual feedback
+                            dragTargetIndex = targetIndex
+
+                            targetIndex
+                        },
+                        modifier = Modifier.animateItemPlacement()
+                    )
+                } /*else {
+                    SwipeableTaskItem(
+                        task = task,
+                        onTaskClick = onTaskClick,
+                        onCheckboxClick = onCheckboxClick,
+                        onComplete = onCheckboxClick,
+                        onDelete = { taskToDelete ->
+                            // Save the task before deletion for potential undo
+                            lastDeletedTask = taskToDelete
+
+                            // Delete the task
+                            viewModel.deleteTask(taskToDelete)
+
+                            // Show snackbar with undo option
+                            coroutineScope.launch {
+                                val result = snackbarHostState.showSnackbar(
+                                    message = "Task deleted",
+                                    actionLabel = "UNDO"
+                                )
+
+                                // If user clicked UNDO, restore the task
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    lastDeletedTask?.let { task ->
+                                        viewModel.restoreTask(task)
+                                        lastDeletedTask = null
+                                    }
+                                }
+                            }
+                        },
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }*/
             }
         }
     }
