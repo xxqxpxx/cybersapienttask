@@ -9,6 +9,7 @@ lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.1"
 composeBom = "2024.04.01"
 materialZ = "1.7.8"
+robolectricVersion = "4.14"
 roomVersion = "2.6.1"
 navigationCompose = "2.7.6"
 lifecycleViewmodelCompose = "2.7.0"
@@ -16,11 +17,18 @@ datastorePreferences = "1.0.0"
 robolectric = "4.11.1"
 ksp = "1.9.0-1.0.13"
 
+# Add to [versions] section
+mockkVersion = "1.13.9"
+coroutinesTest = "1.7.3"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockkVersion" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
+robolectric-junit = { group = "org.robolectric", name = "junit", version.ref = "robolectricVersion" }
 
 # Compose
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }

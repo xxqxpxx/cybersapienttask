@@ -46,8 +46,20 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/LICENSE.md"
+            excludes += "/META-INF/LICENSE-notice.md"
         }
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
+
 }
 
 dependencies {
@@ -109,8 +121,14 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // Robolectric for screenshot testing
-    testImplementation(libs.robolectric)
+    implementation(libs.robolectric)
 
+
+    implementation ( libs.junit )
+
+    implementation(libs.mockk)
+    implementation(libs.kotlinx.coroutines.test)
+    implementation(libs.robolectric)
 
 
 }
