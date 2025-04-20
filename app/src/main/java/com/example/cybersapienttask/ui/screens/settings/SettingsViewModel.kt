@@ -139,7 +139,8 @@ class SettingsViewModel(private val dataStore: DataStore<Preferences>) : ViewMod
 /**
  * Factory for creating SettingsViewModel with the required dependencies
  */
-class SettingsViewModelFactory(private val dataStore: DataStore<Preferences>) : ViewModelProvider.Factory {
+class SettingsViewModelFactory(private val dataStore: DataStore<Preferences>) :
+    ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")

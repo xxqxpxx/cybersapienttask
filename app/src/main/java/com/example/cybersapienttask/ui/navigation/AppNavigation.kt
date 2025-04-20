@@ -8,14 +8,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.cybersapienttask.data.repo.TaskRepository
+import com.example.cybersapienttask.domain.repo.TaskRepository
 import com.example.cybersapienttask.ui.screens.TaskCreationScreen
 import com.example.cybersapienttask.ui.screens.settings.SettingsScreen
 import com.example.cybersapienttask.ui.screens.settings.SettingsViewModel
 import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailScreen
-import com.example.cybersapienttask.ui.screens.tasklist.TaskListScreen
 import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailViewModel
 import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailViewModelFactory
+import com.example.cybersapienttask.ui.screens.tasklist.TaskListScreen
 import com.example.cybersapienttask.viewmodel.TaskListViewModel
 import com.example.cybersapienttask.viewmodel.TaskListViewModelFactory
 
@@ -116,7 +116,7 @@ fun AppNavigation(
             val viewModel: TaskDetailViewModel = viewModel(
                 factory = TaskDetailViewModelFactory(
                     repository = repository,
-                    savedStateHandle = backStackEntry.savedStateHandle ,
+                    savedStateHandle = backStackEntry.savedStateHandle,
                     taskId
                 )
             )

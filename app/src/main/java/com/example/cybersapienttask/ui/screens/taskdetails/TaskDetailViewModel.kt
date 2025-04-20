@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.cybersapienttask.data.model.Task
 import com.example.cybersapienttask.data.model.TaskPriority
-import com.example.cybersapienttask.data.repo.TaskRepository
+import com.example.cybersapienttask.domain.repo.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,7 +23,7 @@ class TaskDetailViewModel(
 ) : ViewModel() {
 
     // Extract the taskId from SavedStateHandle
-  //  private val taskId: Long = savedStateHandle.get<Long>("taskId") ?: 0L
+    //  private val taskId: Long = savedStateHandle.get<Long>("taskId") ?: 0L
 
     private val _task = MutableStateFlow<Task?>(null)
     val task: StateFlow<Task?> = _task.asStateFlow()
@@ -45,9 +45,9 @@ class TaskDetailViewModel(
 
     init {
         // Load task data if taskId is valid
-      //  if (taskId > 0) {
-            loadTask(taskId)
-      //  }
+        //  if (taskId > 0) {
+        loadTask(taskId)
+        //  }
     }
 
     private fun loadTask(id: Long) {
@@ -140,12 +140,12 @@ class TaskDetailViewModel(
 class TaskDetailViewModelFactory(
     private val repository: TaskRepository,
     private val savedStateHandle: SavedStateHandle,
-    private val task : Long
+    private val task: Long
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TaskDetailViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TaskDetailViewModel(repository, savedStateHandle , task) as T
+            return TaskDetailViewModel(repository, savedStateHandle, task) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

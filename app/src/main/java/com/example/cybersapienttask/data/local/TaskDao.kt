@@ -8,7 +8,6 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.cybersapienttask.data.model.Task
 import kotlinx.coroutines.flow.Flow
-import java.time.LocalDate
 
 @Dao
 interface TaskDao {

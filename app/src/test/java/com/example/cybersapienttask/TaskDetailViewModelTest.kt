@@ -3,7 +3,7 @@ package com.example.cybersapienttask
 import androidx.lifecycle.SavedStateHandle
 import com.example.cybersapienttask.data.model.Task
 import com.example.cybersapienttask.data.model.TaskPriority
-import com.example.cybersapienttask.data.repo.TaskRepository
+import com.example.cybersapienttask.domain.repo.TaskRepository
 import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailViewModel
 import io.mockk.coEvery
 import io.mockk.coJustRun

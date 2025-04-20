@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.cybersapienttask.data.model.Task
 import com.example.cybersapienttask.data.model.TaskFilter
 import com.example.cybersapienttask.data.model.TaskSortOrder
-import com.example.cybersapienttask.data.repo.TaskRepository
+import com.example.cybersapienttask.domain.repo.TaskRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

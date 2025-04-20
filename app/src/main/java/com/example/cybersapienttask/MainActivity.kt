@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cybersapienttask.data.local.TaskDatabase
-import com.example.cybersapienttask.data.repo.TaskRepository
+import com.example.cybersapienttask.domain.repo.TaskRepository
 import com.example.cybersapienttask.ui.accessibility.LocalTextScaleFactor
 import com.example.cybersapienttask.ui.navigation.AppNavigation
 import com.example.cybersapienttask.ui.screens.settings.SettingsViewModel
@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
                 TaskManagerTheme(
                     darkTheme = isDarkTheme,
                     customPrimaryColor = primaryColor,
-                //    highContrastMode = highContrastMode
+                    //    highContrastMode = highContrastMode
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
