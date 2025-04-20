@@ -13,31 +13,41 @@ import com.example.cybersapienttask.ui.screens.TaskCreationScreen
 import com.example.cybersapienttask.ui.screens.settings.SettingsScreen
 import com.example.cybersapienttask.ui.screens.settings.SettingsViewModel
 import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailScreen
+import com.example.cybersapienttask.ui.screens.tasklist.TaskListScreen
 import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailViewModel
 import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailViewModelFactory
-import com.example.cybersapienttask.ui.screens.tasklist.TaskListScreen
-import com.example.cybersapienttask.ui.screens.tasklist.TaskListViewModel
-import com.example.cybersapienttask.ui.screens.tasklist.TaskListViewModelFactory
+import com.example.cybersapienttask.viewmodel.TaskListViewModel
+import com.example.cybersapienttask.viewmodel.TaskListViewModelFactory
 
+/**
+ * Navigation routes for the app
+ */
 sealed class Screen(val route: String) {
-    object TaskList : Screen("task_list")
-    object TaskCreation : Screen("task_creation?taskId={taskId}") {
+    data object TaskList : Screen("task_list")
+    data object TaskCreation : Screen("task_creation?taskId={taskId}") {
         fun createRoute(taskId: Long = 0) = "task_creation?taskId=$taskId"
     }
 
-    object TaskDetail : Screen("task_detail/{taskId}") {
+    data object TaskDetail : Screen("task_detail/{taskId}") {
         fun createRoute(taskId: Long) = "task_detail/$taskId"
     }
 
-    object Settings : Screen("settings")
+    data object Settings : Screen("settings")
 }
 
+/**
+ * Main navigation component that sets up the nav host and routes
+ */
 @Composable
 fun AppNavigation(
     repository: TaskRepository,
     settingsViewModel: SettingsViewModel,
     isDarkTheme: Boolean,
+    isHighContrastMode: Boolean,
+    textScaleFactor: Float,
     onToggleDarkTheme: (Boolean) -> Unit,
+    onToggleHighContrastMode: (Boolean) -> Unit,
+    onUpdateTextScale: (Float) -> Unit,
     navController: NavHostController = rememberNavController()
 ) {
     NavHost(navController = navController, startDestination = Screen.TaskList.route) {
@@ -75,7 +85,8 @@ fun AppNavigation(
             val viewModel: TaskDetailViewModel = viewModel(
                 factory = TaskDetailViewModelFactory(
                     repository = repository,
-                    savedStateHandle = backStackEntry.savedStateHandle
+                    savedStateHandle = backStackEntry.savedStateHandle,
+                    taskId
                 )
             )
 
@@ -105,7 +116,8 @@ fun AppNavigation(
             val viewModel: TaskDetailViewModel = viewModel(
                 factory = TaskDetailViewModelFactory(
                     repository = repository,
-                    savedStateHandle = backStackEntry.savedStateHandle
+                    savedStateHandle = backStackEntry.savedStateHandle ,
+                    taskId
                 )
             )
 
@@ -130,7 +142,11 @@ fun AppNavigation(
                     navController.navigateUp()
                 },
                 onToggleDarkMode = onToggleDarkTheme,
-                isDarkMode = isDarkTheme
+                onToggleHighContrastMode = onToggleHighContrastMode,
+                onUpdateTextScale = onUpdateTextScale,
+                isDarkMode = isDarkTheme,
+                isHighContrastMode = isHighContrastMode,
+                textScaleFactor = textScaleFactor
             )
         }
     }

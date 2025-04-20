@@ -13,12 +13,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+/**
+ * ViewModel for task details and creation screen
+ */
 class TaskDetailViewModel(
     private val repository: TaskRepository,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val taskId: Long
 ) : ViewModel() {
 
-    private val taskId: Long? = savedStateHandle.get<Long>("taskId")
+    // Extract the taskId from SavedStateHandle
+  //  private val taskId: Long = savedStateHandle.get<Long>("taskId") ?: 0L
 
     private val _task = MutableStateFlow<Task?>(null)
     val task: StateFlow<Task?> = _task.asStateFlow()
@@ -39,21 +44,27 @@ class TaskDetailViewModel(
     val isCompleted: StateFlow<Boolean> = _isCompleted.asStateFlow()
 
     init {
-        if (taskId != null && taskId != 0L) {
+        // Load task data if taskId is valid
+      //  if (taskId > 0) {
             loadTask(taskId)
-        }
+      //  }
     }
 
     private fun loadTask(id: Long) {
         viewModelScope.launch {
-            val loadedTask = repository.getTaskById(id)
-            _task.value = loadedTask
-            loadedTask?.let { task ->
-                _title.value = task.title
-                _description.value = task.description
-                _priority.value = task.priority
-                _dueDate.value = task.dueDate
-                _isCompleted.value = task.isCompleted
+            try {
+                val loadedTask = repository.getTaskById(id)
+                _task.value = loadedTask
+                loadedTask?.let { task ->
+                    _title.value = task.title
+                    _description.value = task.description
+                    _priority.value = task.priority
+                    _dueDate.value = task.dueDate
+                    _isCompleted.value = task.isCompleted
+                }
+            } catch (e: Exception) {
+                // Handle error loading task
+                // You might want to add error handling here
             }
         }
     }
@@ -78,6 +89,10 @@ class TaskDetailViewModel(
         _isCompleted.value = !_isCompleted.value
     }
 
+    /**
+     * Save the current task
+     * @return true if the task was saved successfully, false otherwise
+     */
     fun saveTask(): Boolean {
         if (_title.value.isBlank()) {
             return false
@@ -107,6 +122,9 @@ class TaskDetailViewModel(
         return true
     }
 
+    /**
+     * Delete the current task
+     */
     fun deleteTask() {
         _task.value?.let { task ->
             viewModelScope.launch {
@@ -116,14 +134,18 @@ class TaskDetailViewModel(
     }
 }
 
+/**
+ * Factory for creating TaskDetailViewModel with dependencies
+ */
 class TaskDetailViewModelFactory(
     private val repository: TaskRepository,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val task : Long
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TaskDetailViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TaskDetailViewModel(repository, savedStateHandle) as T
+            return TaskDetailViewModel(repository, savedStateHandle , task) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

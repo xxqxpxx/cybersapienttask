@@ -1,4 +1,4 @@
-package com.example.taskmanager
+package com.example.cybersapienttask
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -7,6 +7,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,11 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cybersapienttask.data.local.TaskDatabase
 import com.example.cybersapienttask.data.repo.TaskRepository
+import com.example.cybersapienttask.ui.accessibility.LocalTextScaleFactor
 import com.example.cybersapienttask.ui.navigation.AppNavigation
 import com.example.cybersapienttask.ui.screens.settings.SettingsViewModel
 import com.example.cybersapienttask.ui.screens.settings.SettingsViewModelFactory
 import com.example.cybersapienttask.ui.screens.settings.dataStore
 import com.example.cybersapienttask.ui.theme.TaskManagerTheme
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,23 +38,33 @@ class MainActivity : ComponentActivity() {
             )
 
             val primaryColor by settingsViewModel.primaryColor.collectAsState()
-            var z = isSystemInDarkTheme()
-            var isDarkTheme by remember { mutableStateOf(z) }
+            val highContrastMode by settingsViewModel.highContrastMode.collectAsState()
+            val textScaleFactor by settingsViewModel.textScaleFactor.collectAsState()
+            var zz = isSystemInDarkTheme()
+            var isDarkTheme by remember { mutableStateOf(zz) }
 
-            TaskManagerTheme(
-                darkTheme = isDarkTheme,
-                customPrimaryColor = primaryColor
-            ) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+            // Provide the text scale factor to all composables
+            CompositionLocalProvider(LocalTextScaleFactor provides textScaleFactor) {
+                TaskManagerTheme(
+                    darkTheme = isDarkTheme,
+                    customPrimaryColor = primaryColor,
+                //    highContrastMode = highContrastMode
                 ) {
-                    AppNavigation(
-                        repository = repository,
-                        settingsViewModel = settingsViewModel,
-                        isDarkTheme = isDarkTheme,
-                        onToggleDarkTheme = { isDarkTheme = it }
-                    )
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        AppNavigation(
+                            repository = repository,
+                            settingsViewModel = settingsViewModel,
+                            isDarkTheme = isDarkTheme,
+                            isHighContrastMode = highContrastMode,
+                            textScaleFactor = textScaleFactor,
+                            onToggleDarkTheme = { isDarkTheme = it },
+                            onToggleHighContrastMode = { settingsViewModel.updateHighContrastMode(it) },
+                            onUpdateTextScale = { settingsViewModel.updateTextScaleFactor(it) }
+                        )
+                    }
                 }
             }
         }

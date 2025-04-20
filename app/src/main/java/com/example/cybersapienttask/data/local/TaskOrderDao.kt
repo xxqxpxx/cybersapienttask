@@ -34,8 +34,7 @@ interface TaskOrderDao {
         val taskOrders = getTaskOrderSync()
 
         if (fromPosition < 0 || fromPosition >= taskOrders.size ||
-            toPosition < 0 || toPosition >= taskOrders.size
-        ) {
+            toPosition < 0 || toPosition >= taskOrders.size) {
             return
         }
 

@@ -8,6 +8,7 @@ espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.1"
 composeBom = "2024.04.01"
+materialZ = "1.7.8"
 roomVersion = "2.6.1"
 navigationCompose = "2.7.6"
 lifecycleViewmodelCompose = "2.7.0"
@@ -23,6 +24,7 @@ androidx-activity-compose = { group = "androidx.activity", name = "activity-comp
 
 # Compose
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-material-z = { module = "androidx.compose.material:material-*", version.ref = "materialZ" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
@@ -30,6 +32,11 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-material-icon = { group = "androidx.compose.material", name = "material-icons-extended" }
+
+
+#implementation "androidx.compose.material:material-icons-extended:$compose_version"
+
 
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 

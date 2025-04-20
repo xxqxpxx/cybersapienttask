@@ -1,35 +1,74 @@
-package com.example.cybersapienttask.ui.screens.tasklist
+package com.example.cybersapienttask.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.cybersapienttask.data.model.Task
+import com.example.cybersapienttask.data.model.TaskFilter
+import com.example.cybersapienttask.data.model.TaskSortOrder
 import com.example.cybersapienttask.data.repo.TaskRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
-enum class TaskFilter {
-    ALL, COMPLETED, PENDING
-}
-
-enum class TaskSortOrder {
-    PRIORITY, DUE_DATE, ALPHABETICAL
-}
 
 class TaskListViewModel(private val repository: TaskRepository) : ViewModel() {
 
+    // Task filtering, sorting and ordering state
+    private val _filter = MutableStateFlow(TaskFilter.ALL)
+    val filter: StateFlow<TaskFilter> = _filter
+
+    private val _sortOrder = MutableStateFlow(TaskSortOrder.DUE_DATE)
+    val sortOrder: StateFlow<TaskSortOrder> = _sortOrder
+
+    private val _isManualOrder = MutableStateFlow(false)
+    val isManualOrder: StateFlow<Boolean> = _isManualOrder
+
+    // Loading state
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    // Search query state
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
     // Task statistics
+    data class TaskStatistics(
+        val totalTasks: Int,
+        val completedTasks: Int,
+        val pendingTasks: Int = totalTasks - completedTasks,
+        val completionPercentage: Float = if (totalTasks > 0) completedTasks.toFloat() / totalTasks else 0f,
+        val hasDueTasks: Boolean = false,
+        val hasOverdueTasks: Boolean = false
+    )
+
+    // Cache for task operations to avoid loading flicker
+    private val _taskOperationCache = MutableStateFlow<Map<Long, Task>>(emptyMap())
+
+    /**
+     * Task statistics derived from current task list
+     */
     val taskStats: StateFlow<TaskStatistics> = combine(
         repository.getAllTasks(),
         repository.getTasksByStatus(true)
     ) { allTasks, completedTasks ->
+        val hasDueTasks = allTasks.any { it.dueDate != null }
+        val hasOverdueTasks = allTasks.any {
+            it.dueDate != null && it.dueDate.isBefore(LocalDate.now()) && !it.isCompleted
+        }
+
         TaskStatistics(
             totalTasks = allTasks.size,
-            completedTasks = completedTasks.size
+            completedTasks = completedTasks.size,
+            hasDueTasks = hasDueTasks,
+            hasOverdueTasks = hasOverdueTasks
         )
     }.stateIn(
         scope = viewModelScope,
@@ -37,50 +76,73 @@ class TaskListViewModel(private val repository: TaskRepository) : ViewModel() {
         initialValue = TaskStatistics(0, 0)
     )
 
-    data class TaskStatistics(
-        val totalTasks: Int,
-        val completedTasks: Int
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val _filteredTasks = combine(
+        _filter,
+        _searchQuery
+    ) { filter, query ->
+        Pair(filter, query)
+    }.flatMapLatest { (filter, query) ->
+        when (filter) {
+            TaskFilter.ALL -> repository.getAllTasks()
+            TaskFilter.COMPLETED -> repository.getTasksByStatus(true)
+            TaskFilter.PENDING -> repository.getTasksByStatus(false)
+        }.map { tasks ->
+            if (query.isBlank()) {
+                tasks
+            } else {
+                tasks.filter {
+                    it.title.contains(query, ignoreCase = true) ||
+                            it.description.contains(query, ignoreCase = true)
+                }
+            }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
     )
 
-    private val _filter = MutableStateFlow(TaskFilter.ALL)
-    val filter: StateFlow<TaskFilter> = _filter
-
-    private val _sortOrder = MutableStateFlow(TaskSortOrder.DUE_DATE)
-    val sortOrder: StateFlow<TaskSortOrder> = _sortOrder
-
-    private val _allTasks = MutableStateFlow<List<Task>>(emptyList())
-    private val _orderedTasks = MutableStateFlow<List<Task>>(emptyList())
-    private val _filteredTasks = MutableStateFlow<List<Task>>(emptyList())
-    private val _isManualOrder = MutableStateFlow(false)
-
-    val isManualOrder: StateFlow<Boolean> = _isManualOrder
-
+    /**
+     * Combined flow that provides the final task list based on:
+     * - Filtered tasks (by status and search)
+     * - Sort order
+     * - Manual ordering preference
+     * - Task operation cache (for immediate UI updates)
+     */
     val tasks: StateFlow<List<Task>> = combine(
-        _allTasks,
-        _orderedTasks,
-        _filter,
+        _filteredTasks,
         _sortOrder,
-        _isManualOrder
-    ) { allTasks, orderedTasks, filter, sortOrder, isManualOrder ->
-        // First, choose between manual ordering or automatic sorting
-        val baseList = if (isManualOrder) orderedTasks else allTasks
-
-        // Then apply filtering
-        val filtered = when (filter) {
-            TaskFilter.ALL -> baseList
-            TaskFilter.COMPLETED -> baseList.filter { it.isCompleted }
-            TaskFilter.PENDING -> baseList.filter { !it.isCompleted }
+        _isManualOrder,
+        repository.getOrderedTasks(),
+        _taskOperationCache
+    ) { filteredTasks, sortOrder, isManualOrder, orderedTasks, taskCache ->
+        // First, apply any cached task operations
+        val tasksWithCache = filteredTasks.map { task ->
+            taskCache[task.id] ?: task
         }
 
-        // Apply sorting if not using manual ordering
-        if (!isManualOrder) {
-            when (sortOrder) {
-                TaskSortOrder.PRIORITY -> filtered.sortedByDescending { it.priority }
-                TaskSortOrder.DUE_DATE -> filtered.sortedWith(compareBy(nullsLast()) { it.dueDate })
-                TaskSortOrder.ALPHABETICAL -> filtered.sortedBy { it.title }
+        // Then apply the appropriate ordering
+        if (isManualOrder) {
+            // For manual ordering, sort tasks by their position in the ordered list
+            val orderMap = orderedTasks.associateBy { it.taskId }
+            return@combine tasksWithCache.sortedBy { task ->
+                orderMap[task.id]?.position ?: Int.MAX_VALUE
             }
         } else {
-            filtered  // Keep the manual order
+            // For automatic sorting, apply the selected sort order
+            return@combine when (sortOrder) {
+                TaskSortOrder.PRIORITY -> tasksWithCache.sortedByDescending { it.priority }
+                TaskSortOrder.DUE_DATE -> {
+                    val tasksWithoutDueDate = tasksWithCache.filter { it.dueDate == null }
+                    val tasksWithDueDate = tasksWithCache.filter { it.dueDate != null }
+                        .sortedBy { it.dueDate }
+
+                    tasksWithDueDate + tasksWithoutDueDate
+                }
+
+                TaskSortOrder.ALPHABETICAL -> tasksWithCache.sortedBy { it.title.lowercase() }
+            }
         }
     }.stateIn(
         scope = viewModelScope,
@@ -89,57 +151,94 @@ class TaskListViewModel(private val repository: TaskRepository) : ViewModel() {
     )
 
     init {
+        // Start loading data
         viewModelScope.launch {
-            repository.getAllTasks().collect { tasks ->
-                _allTasks.value = tasks
-            }
-        }
-
-        viewModelScope.launch {
-            repository.getOrderedTasks().collect { tasks ->
-                _orderedTasks.value = tasks
+            repository.getAllTasks().collect {
+                _isLoading.value = false
             }
         }
     }
 
-    // Toggle between manual ordering and automatic sorting
-    fun toggleManualOrdering() {
-        _isManualOrder.value = !_isManualOrder.value
-    }
-
-    // Update task order via drag and drop
-    fun moveTask(fromIndex: Int, toIndex: Int) {
-        viewModelScope.launch {
-            repository.moveTask(fromIndex, toIndex)
-        }
-    }
-
+    /**
+     * Set the task filter
+     */
     fun setFilter(filter: TaskFilter) {
         _filter.value = filter
     }
 
+    /**
+     * Set the sort order
+     */
     fun setSortOrder(sortOrder: TaskSortOrder) {
         _sortOrder.value = sortOrder
     }
 
+    /**
+     * Toggle manual ordering of tasks
+     */
+    fun toggleManualOrdering() {
+        _isManualOrder.value = !_isManualOrder.value
+    }
+
+    /**
+     * Set search query for filtering tasks
+     */
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    /**
+     * Toggle completion status of a task
+     */
     fun toggleTaskCompletion(task: Task) {
         viewModelScope.launch {
+            // Update cache for immediate UI feedback
+            val updatedTask = task.copy(isCompleted = !task.isCompleted)
+            _taskOperationCache.value = _taskOperationCache.value + (task.id to updatedTask)
+
+            // Update in repository
             repository.toggleTaskCompletion(task)
+
+            // Clear cache after short delay to ensure repository update is reflected
+            delay(200)
+            _taskOperationCache.value = _taskOperationCache.value - task.id
         }
     }
 
+    /**
+     * Delete a task
+     */
     fun deleteTask(task: Task) {
         viewModelScope.launch {
+            // Remove from cache if present
+            _taskOperationCache.value = _taskOperationCache.value - task.id
+
+            // Delete from repository
             repository.deleteTask(task)
         }
     }
 
+    /**
+     * Restore a previously deleted task (for undo functionality)
+     */
     fun restoreTask(task: Task) {
         viewModelScope.launch {
             repository.insertTask(task)
         }
     }
 
+    /**
+     * Move a task from one position to another in manual ordering mode
+     */
+    fun moveTask(fromPosition: Int, toPosition: Int) {
+        viewModelScope.launch {
+            repository.moveTask(fromPosition, toPosition)
+        }
+    }
+
+    /**
+     * Helper function for sorting by nullable values
+     */
     companion object {
         fun <T : Comparable<T>> nullsLast(): Comparator<T?> {
             return Comparator { a, b ->
@@ -152,8 +251,18 @@ class TaskListViewModel(private val repository: TaskRepository) : ViewModel() {
             }
         }
     }
+
+    /**
+     * Adds a small delay for UI interactions
+     */
+    private suspend fun delay(timeMillis: Long) {
+        kotlinx.coroutines.delay(timeMillis)
+    }
 }
 
+/**
+ * Factory for creating TaskListViewModel instances
+ */
 class TaskListViewModelFactory(private val repository: TaskRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TaskListViewModel::class.java)) {
