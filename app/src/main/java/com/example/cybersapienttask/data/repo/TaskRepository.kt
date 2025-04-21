@@ -1,4 +1,4 @@
-package com.example.cybersapienttask.domain.repo
+package com.example.cybersapienttask.data.repo
 
 import com.example.cybersapienttask.data.local.TaskDao
 import com.example.cybersapienttask.data.local.TaskOrderDao

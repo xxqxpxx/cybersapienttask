@@ -3,7 +3,7 @@ package com.example.cybersapienttask
 import androidx.lifecycle.SavedStateHandle
 import com.example.cybersapienttask.data.model.Task
 import com.example.cybersapienttask.data.model.TaskPriority
-import com.example.cybersapienttask.domain.repo.TaskRepository
+import com.example.cybersapienttask.data.repo.TaskRepository
 import com.example.cybersapienttask.ui.screens.taskdetails.TaskDetailViewModel
 import io.mockk.coEvery
 import io.mockk.coJustRun
@@ -15,7 +15,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
-import org.bouncycastle.util.test.SimpleTest.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

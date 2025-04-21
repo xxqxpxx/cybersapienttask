@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.cybersapienttask.data.model.Task
 import com.example.cybersapienttask.data.model.TaskPriority
-import com.example.cybersapienttask.domain.repo.TaskRepository
+import com.example.cybersapienttask.data.repo.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

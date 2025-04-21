@@ -8,7 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.cybersapienttask.domain.repo.TaskRepository
+import com.example.cybersapienttask.data.repo.TaskRepository
 import com.example.cybersapienttask.ui.screens.TaskCreationScreen
 import com.example.cybersapienttask.ui.screens.settings.SettingsScreen
 import com.example.cybersapienttask.ui.screens.settings.SettingsViewModel

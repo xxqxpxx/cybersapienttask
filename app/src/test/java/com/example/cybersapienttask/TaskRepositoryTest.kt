@@ -4,8 +4,7 @@ import com.example.cybersapienttask.data.local.TaskDao
 import com.example.cybersapienttask.data.local.TaskOrderDao
 import com.example.cybersapienttask.data.model.Task
 import com.example.cybersapienttask.data.model.TaskOrder
-import com.example.cybersapienttask.data.model.TaskPriority
-import com.example.cybersapienttask.domain.repo.TaskRepository
+import com.example.cybersapienttask.data.repo.TaskRepository
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
@@ -19,7 +18,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
-import java.time.LocalDate
 
 class TaskRepositoryTest {
 

@@ -10,7 +10,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.test.core.app.ApplicationProvider
 import com.example.cybersapienttask.data.local.TaskDao
 import com.example.cybersapienttask.data.local.TaskOrderDao
-import com.example.cybersapienttask.domain.repo.TaskRepository
+import com.example.cybersapienttask.data.repo.TaskRepository
 import com.example.cybersapienttask.ui.accessibility.LocalTextScaleFactor
 import com.example.cybersapienttask.ui.screens.tasklist.TaskListScreen
 import com.example.cybersapienttask.ui.theme.TaskManagerTheme
