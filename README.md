@@ -8,6 +8,7 @@ The app should feature a visually appealing design, smooth animations, intuitive
 and the latest Android tools (Android SDK 34/35, Kotlin 2.x, Compose 1.6.x as of February 2025)
 
 
+Loom video explainging everything  : https://www.loom.com/share/4ce2ca111f6d434b9b20eefe48df3ed5?sid=9340137b-30c7-4d01-9c6a-7f96a4cbe5fd 
 
 
 # Task Manager
